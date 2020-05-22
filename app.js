@@ -93,7 +93,14 @@ class UI {
 
 // Local storage class:
 // This class will deal with local storage
-class Storage {}
+class Storage {
+  // This static methods allow us to use this saveProduct method without the need to instantiate that class
+  static saveProduct(products) {
+    // The localStorage property allow to save key/value pairs in a web browser
+    // The JSON.stringify() method converts a JS object or value to a JSON string
+    localStorage.setItem("products", JSON.stringify(products));
+  }
+}
 
 // The DOMContentLoaded event fires when the initial HTML document has been completely loaded and parsed,
 // without waiting for stylesheets, images and subframes to finish loading.
@@ -104,5 +111,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // get all products
   // The then() method returns a Promise
   // Here we call displayProducts function from UI class
-  products.getProducts().then((products) => ui.displayProducts(products));
+  // After that, we call the static saveProducts method to save the products in the local storage
+  products
+    .getProducts()
+    .then((products) => {
+      ui.displayProducts(products);
+      Storage.saveProduct(products);
+    })
+    .then(() => {});
 });
