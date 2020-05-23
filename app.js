@@ -89,6 +89,31 @@ class UI {
     // productsDOM variable is the DOM of product-center div. Here we set that to the result.
     productsDOM.innerHTML = result;
   }
+
+  // Get all the bag buttons and turn them into an array.
+  // It returns a node list by default
+  // The method iterate through all buttons and retrive their ids.
+  // We find the items that are already inCart by using find method on the cart array.
+  // If the item is already in cart, we change the innnerHTML of the button to "In cart" and we disable the button.
+  // Else if the add to bag button is clickec, we change the innerText to "In cart" and we disable the button.
+  getBagButtons() {
+    const buttons = [...document.querySelectorAll(".bag-btn")];
+    buttons.forEach((button) => {
+      let id = button.dataset.id;
+      // The find() method returns the value of the first element in the provided array that satisfies the provided testing function.
+      let inCart = cart.find((item) => item.id === id);
+      if (inCart) {
+        button.innerHTML = "In cart";
+        button.disabled = true;
+      } else {
+        button.addEventListener("click", (event) => {
+          // The target property of the event interface is a reference to the object onto which the event was dispached.
+          event.target.innerText = "In cart";
+          event.target.disabled = true;
+        });
+      }
+    });
+  }
 }
 
 // Local storage class:
@@ -118,5 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ui.displayProducts(products);
       Storage.saveProduct(products);
     })
-    .then(() => {});
+    .then(() => {
+      ui.getBagButtons();
+    });
 });
