@@ -181,6 +181,30 @@ class UI {
     cartOverlay.classList.add("transparentBcg");
     cartDOM.classList.add("showCart");
   }
+
+  // This class setup the application.
+  // Upon loading, we first get the cart item from the local storage: it may or may not exist.
+  // When we got the cart, we set the cart values that are going to be in DOM.
+  // After that we display all the items in the cart.
+  // We also add an event Listener to the cart button to show the cart and access the closing button of the cart.
+  setupAPP() {
+    cart = Storage.getCart();
+    this.setCartValues(cart);
+    this.populateCart(cart);
+    // dont add () after this.function (idk why)
+    cartBtn.addEventListener("click", this.showCart);
+    closeCartBtn.addEventListener("click", this.hideCart);
+  }
+
+  // This method iterate through an cart array and display the items in the cart
+  populateCart(cart) {
+    cart.forEach((item) => this.addCartItem(item));
+  }
+
+  hideCart() {
+    cartOverlay.classList.remove("transparentBcg");
+    cartDOM.classList.remove("showCart");
+  }
 }
 
 // Local storage class:
@@ -205,6 +229,14 @@ class Storage {
   static saveCart(cart) {
     localStorage.setItem("cart", JSON.stringify(cart));
   }
+
+  // This method check is cart item exist in the local storage.
+  // If it exists, we parse the cart and return this array, else we return an empty array
+  static getCart() {
+    return localStorage.getItem("cart")
+      ? JSON.parse(localStorage.getItem("cart"))
+      : [];
+  }
 }
 
 // The DOMContentLoaded event fires when the initial HTML document has been completely loaded and parsed,
@@ -212,6 +244,9 @@ class Storage {
 document.addEventListener("DOMContentLoaded", () => {
   const ui = new UI();
   const products = new Products();
+
+  // Setup application
+  ui.setupAPP();
 
   // get all products
   // The then() method returns a Promise
