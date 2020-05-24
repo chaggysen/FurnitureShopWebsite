@@ -1,3 +1,10 @@
+const client = contentful.createClient({
+  // This is the space ID. A space is like a project folder in Contentful terms
+  space: "v9olvwo3ix6o",
+  // This is the access token for this space. Normally you get both ID and the token in the Contentful web app
+  accessToken: "NfiKbAMtoTIikae2oxjsgiLeNZak0_kqqc4zItEO6zA",
+});
+
 // variables
 
 const cartBtn = document.querySelector(".cart-btn");
@@ -28,12 +35,22 @@ class Products {
   // In conclusion, the async/await keywords enable asynchronous promise-based behavior
   // to be written in a cleaner style, avoiding the need to explicitly consigure promise chain.
   async getProducts() {
+    // Here we want to get all the products of content model "comfyHouseProducts" by using Contentful content delivery API
     try {
-      let result = await fetch("products.json");
-      // This will return the data with the json method on the fetch.
-      // This way, we will get the data in Json format. This Json format is the same format as Contentful.
-      let data = await result.json();
-      let products = data.items;
+      let contentful = await client.getEntries({
+        content_type: "comfyHouseProducts",
+      });
+
+      // let result = await fetch("products.json");
+      // // This will return the data with the json method on the fetch.
+      // // This way, we will get the data in Json format. This Json format is the same format as Contentful.
+      // let data = await result.json();
+
+      //If we want to extract data from local storage we use this line of code
+      // let products = data.items;
+
+      // Here we used the products from Contentful CMS
+      let products = contentful.items;
 
       // We got the json file but the structure is complicated to work with.
       // The following lines of code will destructure the data.
@@ -205,6 +222,101 @@ class UI {
     cartOverlay.classList.remove("transparentBcg");
     cartDOM.classList.remove("showCart");
   }
+
+  // This method will setup all cart logic
+  cartLogic() {
+    // This will point to the UI class. We need to access things within this class so we need this format.
+    // If not, we can format like this.showCart or this.hideCart earlier
+    clearCartBtn.addEventListener("click", () => {
+      this.clearCart();
+    });
+
+    // cart functionality
+    cartContent.addEventListener("click", (event) => {
+      // Here we add event listener to the whole cart content class. We distinguish each button from target.
+      // Here we check if the target class contains remove-item
+      if (event.target.classList.contains("remove-item")) {
+        let removeItem = event.target;
+        let id = removeItem.dataset.id;
+        // This will remove the item from the cart. But we want to remove it from the DOM.
+        // To acheive this, since we want to remove the whole cart-item div,
+        // we need to access the parent of the parent of remove-item class
+        cartContent.removeChild(removeItem.parentElement.parentElement);
+        this.removeItem(id);
+
+        // Here we check if the target class contains fa-chevron-up
+      } else if (event.target.classList.contains("fa-chevron-up")) {
+        let addAmount = event.target;
+        let id = addAmount.dataset.id;
+        // Find the item of the specified id and assign it to tempItem. Increment by 1
+        let tempItem = cart.find((item) => item.id === id);
+        tempItem.amount = tempItem.amount + 1;
+        // We need to update the local storage because else if we refresh it will come back to the old values.
+        // When we updated the value, we updated the cart but we didn't save it
+        // We also need to update the cart's total
+        // Finally, we need to update the actual value of amount displayed betwwen the up and down arrow key
+        Storage.saveCart(cart);
+        this.setCartValues(cart);
+        // The nextElementSibling property returns the element immediately following the specified element, in the same tree level
+        addAmount.nextElementSibling.innerText = tempItem.amount;
+
+        // Here we check if the target class contains fa-chevron-down
+      } else if (event.target.classList.contains("fa-chevron-down")) {
+        let lowerAmount = event.target;
+        let id = lowerAmount.dataset.id;
+        let tempItem = cart.find((item) => item.id === id);
+        tempItem.amount = tempItem.amount - 1;
+        // Here, if the amount is 0 or less, there is no point of keeping it in the cart
+        // So remove item
+        // If it is bigger than 0, update the cart and the total
+        if (tempItem.amount > 0) {
+          Storage.saveCart(cart);
+          this.setCartValues(cart);
+          lowerAmount.previousElementSibling.innerText = tempItem.amount;
+        } else {
+          // The Node.removeChild() method removes a child node from the DOM and returns the removed node
+          cartContent.removeChild(lowerAmount.parentElement.parentElement);
+          this.removeItem(id);
+        }
+        Storage.saveCart(cart);
+        this.setCartValues(cart);
+      }
+    });
+  }
+
+  // This method will clear the cart.
+  // We first get the cart array in the local storage and assign all items to cartItems.
+  // We then loop through cartItems and call removeItem method for each item using its id.
+  // Now we have to remove the content of the item from the cart-centent div
+  clearCart() {
+    let cartItems = cart.map((item) => item.id);
+    cartItems.forEach((id) => this.removeItem(id));
+    console.log(cartContent.children);
+    //While there are still children in cartContent, we keep remove the first child
+    while (cartContent.children.length > 0) {
+      cartContent.removeChild(cartContent.children[0]);
+    }
+    this.hideCart();
+  }
+
+  // This method will remove a specific item with of a specific id from the cart and enable the button add to cart
+  // We wrote a sperate method for this feature because this method will be used in clear cart and in remove
+  removeItem(id) {
+    // The filter method creates a new array with all elements that pass the test implemented by the provided function
+    cart = cart.filter((item) => item.id !== id);
+    // Change cart values (price and amount)
+    this.setCartValues(cart);
+    // Save the new cart to the local storage
+    Storage.saveCart(cart);
+    let button = this.getSingleButton(id);
+    // Since we removed the item from the shopping cart, the add to bag button should be enabled and changed to add to cart
+    button.disabled = false;
+    button.innerHTML = `<i class="fa fa-shopping-cart"></i>add to bag`;
+  }
+
+  getSingleButton(id) {
+    return buttonsDOM.find((button) => button.dataset.id === id);
+  }
 }
 
 // Local storage class:
@@ -260,5 +372,6 @@ document.addEventListener("DOMContentLoaded", () => {
     })
     .then(() => {
       ui.getBagButtons();
+      ui.cartLogic();
     });
 });
